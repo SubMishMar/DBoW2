@@ -7,6 +7,7 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 
 // DBoW2
@@ -23,7 +24,7 @@ using namespace std;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
-void loadFeatures(vector<vector<cv::Mat > > &features);
+void loadFeatures(vector<vector<cv::Mat > > &features, std::vector<cv::String> filenames_left);
 void changeStructure(const cv::Mat &plain, vector<cv::Mat> &out);
 void testVocCreation(const vector<vector<cv::Mat > > &features);
 void testDatabase(const vector<vector<cv::Mat > > &features);
@@ -32,7 +33,7 @@ void testDatabase(const vector<vector<cv::Mat > > &features);
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
 // number of training images
-const int NIMAGES = 4;
+const int NIMAGES = 2001;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
@@ -47,7 +48,13 @@ void wait()
 int main()
 {
   vector<vector<cv::Mat > > features;
-  loadFeatures(features);
+
+  // folder and file names
+  std::vector<cv::String> filenames_left;
+  cv::String folder_left;
+  folder_left = "/home/subodh/github-projects/DBoW2/demo/image_0";
+  cv::glob(folder_left, filenames_left);
+  loadFeatures(features, filenames_left);
 
   testVocCreation(features);
 
@@ -60,7 +67,7 @@ int main()
 
 // ----------------------------------------------------------------------------
 
-void loadFeatures(vector<vector<cv::Mat > > &features)
+void loadFeatures(vector<vector<cv::Mat > > &features, std::vector<cv::String> filenames_left)
 {
   features.clear();
   features.reserve(NIMAGES);
@@ -73,7 +80,7 @@ void loadFeatures(vector<vector<cv::Mat > > &features)
     stringstream ss;
     ss << "images/image" << i << ".png";
 
-    cv::Mat image = cv::imread(ss.str(), 0);
+    cv::Mat image = imread(filenames_left[i], CV_8UC1);
     cv::Mat mask;
     vector<cv::KeyPoint> keypoints;
     cv::Mat descriptors;
@@ -119,17 +126,21 @@ void testVocCreation(const vector<vector<cv::Mat > > &features)
   // lets do something with this vocabulary
   cout << "Matching images against themselves (0 low, 1 high): " << endl;
   BowVector v1, v2;
+  ofstream myfile;
+  myfile.open("MatchingResult.txt");
   for(int i = 0; i < NIMAGES; i++)
   {
+    //cout << "Searching match for: " << i << std::endl;
     voc.transform(features[i], v1);
-    for(int j = 0; j < NIMAGES; j++)
+    for(int j = 0; j < i-100; j++)
     {
       voc.transform(features[j], v2);
       
       double score = voc.score(v1, v2);
-      cout << "Image " << i << " vs Image " << j << ": " << score << endl;
+      myfile << i << " " << " " << j << " " << score << endl; 
     }
   }
+  myfile.close();
 
   // save the vocabulary to disk
   cout << endl << "Saving vocabulary..." << endl;
